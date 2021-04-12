@@ -1,0 +1,195 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  Fargate for ECS Create Tasks
+
+Metadata:
+  "AWS::CloudFormation::Interface":
+    ParameterGroups:
+      - Label:
+          default: "Project Name Prefix"
+        Parameters:
+          - PJPrefix
+      - Label:
+          default: "Fargate for ECS Configuration"
+        Parameters:
+          - ECSTaskName
+          - ECSTaskCPUUnit
+          - ECSTaskMemory
+          - ECSContainerName
+          - ECSImageName
+          - ECSServiceName
+          - ECSEnvLocustTargetPath
+          - ECSEnvLocustTargetUrl
+
+    ParameterLabels:
+      ECSTaskName:
+        default: "ECSTaskName"
+      ECSTaskCPUUnit:
+        default: "ECSTaskCPUUnit"
+      ECSTaskMemory:
+        default: "ECSTaskMemory"
+      ECSContainerName:
+        default: "ECSContainerName"
+      ECSImageName:
+        default: "ECSImageName"
+      ECSEnvLocustTargetPath:
+        default: "ECSEnvLocustTargetPath"
+      ECSEnvLocustTargetUrl:
+        default: "ECSEnvLocustTargetUrl"
+
+# ------------------------------------------------------------#
+# Input Parameters
+# ------------------------------------------------------------#
+Parameters:
+  PJPrefix:
+    Type: String
+
+#ECSTaskName
+  ECSTaskName:
+    Type: String
+    Default: "task"
+
+#ECSTaskCPUUnit
+  ECSTaskCPUUnit:
+    AllowedValues: [ 256, 512, 1024, 2048, 4096  ]
+    Type: String
+    Default: "256"
+
+#ECSTaskMemory
+  ECSTaskMemory:
+    AllowedValues: [ 256, 512, 1024, 2048, 4096  ]
+    Type: String
+    Default: "512"
+
+#ECSContainerName
+  ECSContainerName:
+    Type: String
+    Default: "container"
+
+#ECSImageName
+  ECSImageName:
+    Type: String
+    Default: "locust"
+
+#ECSEnvLocustMaster
+  ECSEnvLocustMaster:
+    Type: String
+    Default: "127.0.0.1"
+
+#ECSEnvLocustTargetPath
+  ECSEnvLocustTargetPath:
+    Type: String
+    Default: "API-HOST"
+
+#ECSEnvLocustTargetUrl
+  ECSEnvLocustTargetUrl:
+    Type: String
+    Default: "HOST"
+
+Resources:
+# ------------------------------------------------------------#
+# ECS Task Execution Role
+# ------------------------------------------------------------#
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+# ------------------------------------------------------------#
+#  ECS TaskDefinition
+# ------------------------------------------------------------#
+  ECSTaskDefinition:
+    Type: "AWS::ECS::TaskDefinition"
+    Properties:
+      ExecutionRoleArn: !Ref TaskExecutionRole
+      Family: !Sub "${PJPrefix}-${ECSTaskName}"
+      Memory: !Ref ECSTaskMemory
+      Cpu: !Ref ECSTaskCPUUnit
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+
+#ContainerDefinitions
+      ContainerDefinitions:
+        - Name: !Sub "${PJPrefix}-${ECSContainerName}"
+          Image: !Ref ECSImageName
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Sub "/ecs/logs/${PJPrefix}-ecs-group"
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: !Ref PJPrefix
+          Command:
+            - "/locust/master.sh"
+          PortMappings:
+              - ContainerPort: 8089
+              - ContainerPort: 5557
+              - ContainerPort: 5558
+          Environment:
+              - Name: LOCUST_MASTER
+                Value: "127.0.0.1"
+              - Name: LOCUST_TARGET_PATH
+                Value: !Ref ECSEnvLocustTargetPath
+              - Name: LOCUST_TARGET_URL
+                Value: !Ref ECSEnvLocustTargetUrl
+
+# ------------------------------------------------------------#
+# Output Parameters
+# ------------------------------------------------------------#
+Outputs:
+#ECSTaskDefinitionName
+  ECSTaskDefinitionName:
+    Value: !Sub "${PJPrefix}-${ECSTaskName}"
+    Export:
+      Name: !Sub "${PJPrefix}-${ECSTaskName}-name"
+
+#ECSTaskDefinition
+  ECSTaskDefinitionARN:
+    Value: !Ref ECSTaskDefinition
+    Export:
+      Name: !Sub "${PJPrefix}-${ECSTaskName}-arn"
+
+#ECSTaskCPUUnit
+  ECSTaskCPUUnit:
+    Value: !Ref ECSTaskCPUUnit
+    Export:
+      Name: !Sub "${PJPrefix}-${ECSTaskName}-cpuunit"
+
+#ECSTaskMemory
+  ECSTaskMemory:
+    Value: !Ref ECSTaskMemory
+    Export:
+      Name: !Sub "${PJPrefix}-${ECSTaskName}-memory"
+
+#ECSContainer
+  ECSContainerName:
+    Value: !Sub "${PJPrefix}-${ECSContainerName}"
+    Export:
+      Name: !Sub "${PJPrefix}-${ECSContainerName}-name"
+
+#ECSImage
+  ECSImageName:
+    Value: !Ref ECSImageName
+    Export:
+      Name: !Sub "${ECSImageName}-name"
+
+#ECSEnvLocustTargetPath
+  ECSEnvLocustTargetPath:
+    Value: !Ref ECSEnvLocustTargetPath
+    Export:
+      Name: !Sub "${ECSEnvLocustTargetPath}-locust-targetpath"
+
+#ECSEnvLocustTargetUrl
+  ECSEnvLocustTargetUrl:
+    Value: !Ref ECSEnvLocustTargetUrl
+    Export:
+      Name: !Sub "${ECSEnvLocustTargetUrl}-locust-target-url"

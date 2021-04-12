@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:
+  Fargate for ECS Create
+
+Metadata:
+  "AWS::CloudFormation::Interface":
+    ParameterGroups:
+      - Label:
+          default: "Project Name Prefix"
+        Parameters:
+          - PJPrefix
+      - Label:
+          default: "Fargate for ECS Configuration"
+        Parameters:
+          - ECSClusterName
+
+    ParameterLabels:
+      ECSClusterName:
+        default: "ECSClusterName"
+
+# ------------------------------------------------------------#
+# Input Parameters
+# ------------------------------------------------------------#
+Parameters:
+  PJPrefix:
+    Type: String
+
+#ECSClusterName
+  ECSClusterName:
+    Type: String
+    Default: "your-project"
+
+Resources:
+# ------------------------------------------------------------#
+# ECS Cluster
+# ------------------------------------------------------------#
+  ECSCluster:
+    Type: "AWS::ECS::Cluster"
+    Properties:
+      ClusterName: !Sub "${PJPrefix}-${ECSClusterName}"
+
+# ------------------------------------------------------------#
+#  ECS LogGroup
+# ------------------------------------------------------------#
+  ECSLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: !Sub "/ecs/logs/${PJPrefix}-ecs-group"
+
+# ------------------------------------------------------------#
+# Output Parameters
+# ------------------------------------------------------------#
+Outputs:
+#ECSClusterName
+  ECSClusterName:
+    Value: !Sub "${PJPrefix}-${ECSClusterName}"
+    Export:
+      Name: !Sub "${PJPrefix}-${ECSClusterName}-name"
+
+#ECSClusterARN
+  ECSClusterARN:
+    Value: !GetAtt ECSCluster.Arn
+    Export:
+      Name: !Sub "${PJPrefix}-${ECSClusterName}-arn"
+
+#ECSLogGroup
+  ECSLogGroupName:
+    Value: !Sub "/ecs/logs/${PJPrefix}-ecs-group"
+    Export:
+      Name: !Sub "${PJPrefix}-ecs-group-name"
+
+  ECSLogGroupARN:
+    Value: !GetAtt ECSLogGroup.Arn
+    Export:
+      Name: !Sub "${PJPrefix}-ecs-group-arn"
