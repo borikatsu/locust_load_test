@@ -17,7 +17,6 @@ Metadata:
           - ECSTaskMemory
           - ECSContainerName
           - ECSImageName
-          - ECSServiceName
           - ECSEnvLocustTargetPath
           - ECSEnvLocustTargetUrl
 
@@ -69,17 +68,12 @@ Parameters:
 #ECSImageName
   ECSImageName:
     Type: String
-    Default: "locust"
-
-#ECSEnvLocustMaster
-  ECSEnvLocustMaster:
-    Type: String
-    Default: "127.0.0.1"
+    Default: "AWSAccountID.dkr.ecr.ap-northeast-1.amazonaws.com/ecr-repository:latest"
 
 #ECSEnvLocustTargetPath
   ECSEnvLocustTargetPath:
     Type: String
-    Default: "API-HOST"
+    Default: "API HOST"
 
 #ECSEnvLocustTargetUrl
   ECSEnvLocustTargetUrl:
@@ -117,6 +111,9 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-ecs-task"
 
 #ContainerDefinitions
       ContainerDefinitions:
@@ -125,7 +122,8 @@ Resources:
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group: !Sub "/ecs/logs/${PJPrefix}-ecs-group"
+              awslogs-group:
+                Fn::ImportValue: !Sub "${PJPrefix}-ecs-group-name"
               awslogs-region: !Ref "AWS::Region"
               awslogs-stream-prefix: !Ref PJPrefix
           Command:
@@ -175,21 +173,3 @@ Outputs:
     Value: !Sub "${PJPrefix}-${ECSContainerName}"
     Export:
       Name: !Sub "${PJPrefix}-${ECSContainerName}-name"
-
-#ECSImage
-  ECSImageName:
-    Value: !Ref ECSImageName
-    Export:
-      Name: !Sub "${ECSImageName}-name"
-
-#ECSEnvLocustTargetPath
-  ECSEnvLocustTargetPath:
-    Value: !Ref ECSEnvLocustTargetPath
-    Export:
-      Name: !Sub "${ECSEnvLocustTargetPath}-locust-targetpath"
-
-#ECSEnvLocustTargetUrl
-  ECSEnvLocustTargetUrl:
-    Value: !Ref ECSEnvLocustTargetUrl
-    Export:
-      Name: !Sub "${ECSEnvLocustTargetUrl}-locust-target-url"

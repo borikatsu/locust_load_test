@@ -13,10 +13,13 @@ Metadata:
           default: "Fargate for ECS Configuration"
         Parameters:
           - ECSClusterName
+          - ECRRepositoryName
 
     ParameterLabels:
       ECSClusterName:
         default: "ECSClusterName"
+      ECRRepositoryName:
+        default: "ECRRepositoryName"
 
 # ------------------------------------------------------------#
 # Input Parameters
@@ -28,7 +31,12 @@ Parameters:
 #ECSClusterName
   ECSClusterName:
     Type: String
-    Default: "your-project"
+    Default: "cluster"
+
+#ECRRepositoryName
+  ECRRepositoryName:
+    Type: String
+    Default: "locust"
 
 Resources:
 # ------------------------------------------------------------#
@@ -38,6 +46,9 @@ Resources:
     Type: "AWS::ECS::Cluster"
     Properties:
       ClusterName: !Sub "${PJPrefix}-${ECSClusterName}"
+      Tags:
+        - Key: Name
+          Value: !Sub "${PJPrefix}-ecs-cluster"
 
 # ------------------------------------------------------------#
 #  ECS LogGroup
@@ -46,6 +57,14 @@ Resources:
     Type: "AWS::Logs::LogGroup"
     Properties:
       LogGroupName: !Sub "/ecs/logs/${PJPrefix}-ecs-group"
+
+# ------------------------------------------------------------#
+#  ECR
+# ------------------------------------------------------------#
+  ECR:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${PJPrefix}-${ECRRepositoryName}"
 
 # ------------------------------------------------------------#
 # Output Parameters
